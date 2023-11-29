@@ -1,0 +1,6 @@
+#!/bin/bash
+
+img_name="cama1171/project-rest-img:v1"
+docker build -t "$img_name" -f rest-docker .
+docker push "$img_name"
+docker rmi "$img_name"

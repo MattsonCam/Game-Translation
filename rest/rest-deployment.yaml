@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rest
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rest
+  template:
+    metadata:
+      labels:
+        app: rest
+    spec:
+      containers:
+      - name: rest
+        image: cama1171/rest-img:v1
+        ports:
+        - containerPort: 5000
+        env:
+          - name: FLASK_PORT
+            value: "5000"
+          - name: REDIS_HOST
+            value: "redis"
+          - name: MINIO_HOST
+            value: "minio:9000"
