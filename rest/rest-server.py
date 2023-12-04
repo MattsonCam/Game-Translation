@@ -1,12 +1,11 @@
 import io
 from flask import send_file, request, Flask, jsonify, Response
-from minio import Minio
+# from minio import Minio
 import uuid
-import redis
+# import redis
 import base64
 import json
 import jsonpickle
-from minio import Minio
 import os
 
 app = Flask(__name__)
@@ -14,9 +13,18 @@ bucket_name = 'mp3files'
 #redis_server = redis.StrictRedis(host=os.getenv('REDIS_HOST', 'localhost'), port=6379, db=0)
 #min_server = Minio(os.getenv('MINIO_HOST', 'localhost:9000'), access_key='rootuser', secret_key='rootpass123', secure=False)
 
-@app.route('/apiv1/translate/<string:translations>', methods=['GET', 'POST'])
-def process_translations(translations):
-    response = {'translation' : translations}
+@app.route('/apiv1/translate/upload', methods=['GET', 'POST'])
+def process_translations():
+    data = request.get_json()
+    lines = data['lines']
+    response = [{'sourceText': lines[i], 'translatedText': 'Hola'} for i in range(len(lines))]
+
+    mockResponse = [
+        {'sourceText': 'Hello', 'translatedText': 'Hola'},
+        {'sourceText': 'World', 'translatedText': 'Mundo'},
+        {'sourceText': 'Everyone', 'translatedText': 'GG'}
+    ]
+    # response = {'translation' : translations}
     response_pickled = jsonpickle.encode(response)
     return Response(response=response_pickled, status=200, mimetype="application/json")
     """
