@@ -2,46 +2,119 @@ import io
 from flask import send_file, request, Flask, jsonify, Response
 # from minio import Minio
 import uuid
-# import redis
+import redis
 import base64
 import json
-import jsonpickle
+# import jsonpickle
+import hashlib
 import os
 
 app = Flask(__name__)
-bucket_name = 'mp3files'
-#redis_server = redis.StrictRedis(host=os.getenv('REDIS_HOST', 'localhost'), port=6379, db=0)
-#min_server = Minio(os.getenv('MINIO_HOST', 'localhost:9000'), access_key='rootuser', secret_key='rootpass123', secure=False)
+# bucket_name = 'mp3files'
+# min_server = Minio(os.getenv('MINIO_HOST', 'localhost:9000'), access_key='rootuser', secret_key='rootpass123', secure=False)
 
-@app.route('/apiv1/translate/upload', methods=['GET', 'POST'])
+# Configure Redis
+redis_host = os.getenv('REDIS_HOST', 'localhost')
+redis_port = os.getenv('REDIS_PORT', 6379)
+redis_client = redis.StrictRedis(host=redis_host, port=redis_port, db=0)
+
+
+def get_hash_key(line, source_lang, target_lang):
+    """
+    Generate a SHA256 hash key for the given source and target languages and line.
+    """
+    key_string = f"{source_lang}_{target_lang}_{line}"
+    return hashlib.sha256(key_string.encode()).hexdigest()
+
+def push_queue(line, source_lang, target_lang, hash_key):
+    """
+    Send the translation task to the Redis message queue.
+    """
+    task = json.dumps({
+        'line': line,
+        'sourceLang': source_lang,
+        'targetLang': target_lang,
+        'hashKey': hash_key
+    })
+    redis_client.rpush('translation_queue', task)
+
+def find_translation(line, source_lang, target_lang, hash_key):
+    # Check if the translation is in Redis cache
+    cached_translation = redis_client.get(hash_key)
+    if cached_translation:
+        redis_client.expire(hash_key, 300)
+        return cached_translation.decode('utf-8')
+
+    # Check if the translation is in the SQL database (implement this function)
+    translation = query_database_for_translation(line, source_lang, target_lang) # implement this function
+    if translation:
+        redis_client.set(hash_key, translation, ex=1800)
+        return translation
+
+    return None
+
+
+@app.route('/apiv1/translate/request', methods=['POST'])
 def process_translations():
-    data = request.get_json()
-    lines = data['lines']
-    response = [{'sourceText': lines[i], 'translatedText': 'Hola'} for i in range(len(lines))]
+    try:
+        data = request.get_json()
+        lines = data.get('tasks', [])
+        source_lang = data.get('sourceLang', '')
+        target_lang = data.get('targetLang', '')
+        request_id = data.get('requestId', '')
 
-    mockResponse = [
-        {'sourceText': 'Hello', 'translatedText': 'Hola'},
-        {'sourceText': 'World', 'translatedText': 'Mundo'},
-        {'sourceText': 'Everyone', 'translatedText': 'GG'}
-    ]
-    # response = {'translation' : translations}
-    response_pickled = jsonpickle.encode(response)
-    return Response(response=response_pickled, status=200, mimetype="application/json")
-    """
-    songhash = str(uuid.uuid4())
-    modhash = f"{songhash}.mp3"
-    json_req = request.json
-    task_info = {'songhash': songhash, 'callback': json_req.get('callback')}
-    
-    if not min_server.bucket_exists(bucket_name):
-        min_server.make_bucket(bucket_name)
+        # mockResponse = [{'sourceText': lines[i], 'translatedText': 'Hola'} for i in range(len(lines))]
 
-    mp3_enc = base64.b64decode(json_req.get('mp3'))
-    min_server.put_object(bucket_name, modhash, io.BytesIO(mp3_enc), len(mp3_enc))
-    redis_server.lpush('toWorker', json.dumps(task_info))
+        response = {'requestId': request_id, 'status': False, 'results': {}}
+        results = {}
+        for line in lines:
+            # Create a unique key for each line for caching and database queries
+            hash_key = get_hash_key(source_lang, target_lang, line)
 
-    return jsonify(hash=songhash, reason="Song enqueued for separation")
-    """
+            # Check translation
+            translated_line = find_translation(line, source_lang, target_lang, hash_key)
+            if translated_line is not None:
+                results[line] = translated_line
+                continue
+
+            push_queue(line, source_lang, target_lang, hash_key)
+
+        response['results'] = results
+        if len(results) == len(lines):
+            response['status'] = True
+
+        return jsonify(response), 200
+    except Exception as e:
+        return jsonify({'error': 'Internal server error'}), 500
+
+@app.route('/apiv1/translate/status', methods=['POST'])
+def check_translation_status():
+    try:
+        data = request.get_json()
+        lines = data.get('tasks', [])
+        source_lang = data.get('sourceLang', '')
+        target_lang = data.get('targetLang', '')
+        request_id = data.get('requestId', '')
+
+        response = {'requestId': request_id, 'status': False, 'results': {}}
+        results = {}
+        for line in lines:
+            hash_key = get_hash_key(source_lang, target_lang, line)
+            translated_line = find_translation(line, source_lang, target_lang, hash_key)
+            
+            if translated_line is not None:
+                results[line] = translated_line
+                continue
+
+        response['results'] = results
+        if len(results) == len(lines):
+            response['status'] = True
+
+        return jsonify(response), 200
+    except Exception as e:
+        return jsonify({'error': 'Internal server error'}), 500
+
+
 """
 @app.route('/apiv1/queue/', methods=['GET'])
 def get_queue():
@@ -65,7 +138,7 @@ def remove_track(songhash, track):
 """
 @app.route('/', methods=['GET'])
 def hello():
-    return '<h1>Music Separation Server</h1><p>Use a valid endpoint</p>'
+    return '<h1>Game Translation Server</h1><p>Use a valid endpoint</p>'
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
