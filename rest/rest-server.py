@@ -58,21 +58,19 @@ def connect_cursor(func):
 
 @connect_cursor
 def query_database_for_translation(_line, _source_lang, _target_lang, cursor):
-    with connection.cursor() as cursor:
-        query_read = "SELECT * FROM translations WHERE input = %s AND source = %s AND target = %s"
-        cursor.execute(query_read, (_line, _source_lang, _target_lang))
-        result = cursor.fetchone()
+    query_read = "SELECT * FROM translations WHERE input = %s AND source = %s AND target = %s"
+    cursor.execute(query_read, (_line, _source_lang, _target_lang))
+    result = cursor.fetchone()
     return result
     
 @connect_cursor
 def insert_translation(_input, _translation, _source, _target, cursor):
     translation_exists = query_database_for_translation(_input, _source, _target)
     if not translation_exists:
-        with connection.cursor() as cursor:
-            query_insert = "INSERT INTO translations (input, translation, source, target) VALUES (%s, %s, %s, %s)"
-            cursor.execute(query_insert, (_input, _translation, _source, _target))
-            connection.commit()
-            print("Translation was added to database")
+        query_insert = "INSERT INTO translations (input, translation, source, target) VALUES (%s, %s, %s, %s)"
+        cursor.execute(query_insert, (_input, _translation, _source, _target))
+        connection.commit()
+        print("Translation was added to database")
 
     else:
         print("Translation already exists")
