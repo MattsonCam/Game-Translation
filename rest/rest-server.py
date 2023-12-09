@@ -49,14 +49,23 @@ def push_queue(line, source_lang, target_lang, hash_key):
     })
     redis_client.rpush('translation_queue', task)
     
-def query_database_for_translation(_line, _source_lang, _target_lang):
+def connect_cursor(func):
+    def wrapper(*args):
+        with connection.cursor() as cursor:
+            result = func(*args, cursor)
+        return result
+    return wrapper
+
+@connect_cursor
+def query_database_for_translation(_line, _source_lang, _target_lang, cursor):
     with connection.cursor() as cursor:
         query_read = "SELECT * FROM translations WHERE input = %s AND source = %s AND target = %s"
         cursor.execute(query_read, (_line, _source_lang, _target_lang))
         result = cursor.fetchone()
     return result
     
-def insert_translation(_input, _translation, _source, _target):
+@connect_cursor
+def insert_translation(_input, _translation, _source, _target, cursor):
     translation_exists = query_database_for_translation(_input, _source, _target)
     if not translation_exists:
         with connection.cursor() as cursor:
