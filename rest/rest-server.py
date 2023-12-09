@@ -21,7 +21,8 @@ db_name = "translatedb"
 connection = mysql.connector.connect(
 host="10.74.112.3",
 user="root",
-password=""
+password="",
+database=db_name
 )
 
 # Configure Redis
