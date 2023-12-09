@@ -2,6 +2,7 @@
 
 import io
 from flask import send_file, request, Flask, jsonify, Response
+import mysql.connector
 # from minio import Minio
 import uuid
 import redis
@@ -14,6 +15,14 @@ import os
 app = Flask(__name__)
 # bucket_name = 'mp3files'
 # min_server = Minio(os.getenv('MINIO_HOST', 'localhost:9000'), access_key='rootuser', secret_key='rootpass123', secure=False)
+
+# Establish a mysql connection
+db_name = "translatedb"
+connection = mysql.connector.connect(
+host="10.74.112.3",
+user="root",
+password=""
+)
 
 # Configure Redis
 redis_host = os.getenv('REDIS_HOST', 'localhost')
@@ -39,6 +48,8 @@ def push_queue(line, source_lang, target_lang, hash_key):
         'hashKey': hash_key
     })
     redis_client.rpush('translation_queue', task)
+    
+#def query_database_for_translation(_line, _source_lang, _target_lang):
 
 def find_translation(line, source_lang, target_lang, hash_key):
     # Check if the translation is in Redis cache
@@ -49,6 +60,7 @@ def find_translation(line, source_lang, target_lang, hash_key):
 
     # Check if the translation is in the SQL database (implement this function)
     translation = query_database_for_translation(line, source_lang, target_lang) # implement this function
+    
     if translation:
         redis_client.set(hash_key, translation, ex=1800)
         return translation
