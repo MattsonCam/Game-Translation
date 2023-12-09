@@ -49,7 +49,24 @@ def push_queue(line, source_lang, target_lang, hash_key):
     })
     redis_client.rpush('translation_queue', task)
     
-#def query_database_for_translation(_line, _source_lang, _target_lang):
+def query_database_for_translation(_line, _source_lang, _target_lang):
+    with connection.cursor() as cursor:
+        query_read = "SELECT * FROM translations WHERE input = %s AND source = %s AND target = %s"
+        cursor.execute(query_read, (_line, _source_lang, _target_lang))
+        result = cursor.fetchone()
+    return result
+    
+def insert_translation(_input, _translation, _source, _target):
+    translation_exists = query_database_for_translation(_input, _source, _target)
+    if not translation_exists:
+        with connection.cursor() as cursor:
+            query_insert = "INSERT INTO translations (input, translation, source, target) VALUES (%s, %s, %s, %s)"
+            cursor.execute(query_insert, (_input, _translation, _source, _target))
+            connection.commit()
+            print("Translation was added to database")
+
+    else:
+        print("Translation already exists")
 
 def find_translation(line, source_lang, target_lang, hash_key):
     # Check if the translation is in Redis cache
@@ -58,8 +75,7 @@ def find_translation(line, source_lang, target_lang, hash_key):
         redis_client.expire(hash_key, 300)
         return cached_translation.decode('utf-8')
 
-    # Check if the translation is in the SQL database (implement this function)
-    translation = query_database_for_translation(line, source_lang, target_lang) # implement this function
+    translation = query_database_for_translation(line, source_lang, target_lang)
     
     if translation:
         redis_client.set(hash_key, translation, ex=1800)
