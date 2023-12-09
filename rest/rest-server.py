@@ -1,3 +1,5 @@
+#!/bin/python3
+
 import io
 from flask import send_file, request, Flask, jsonify, Response
 # from minio import Minio
