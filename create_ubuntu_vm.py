@@ -110,6 +110,7 @@ def create_instance(
                 "autoDelete": True,
                 "initializeParams": {
                     "sourceImage": source_disk_image,
+                    "diskSizeGb": "50",
                 },
             }
         ],
