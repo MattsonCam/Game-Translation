@@ -61,7 +61,7 @@ def connect_cursor(func):
 def query_database_for_translation(_line, _source_lang, _target_lang, cursor):
     query_read = "SELECT translation FROM translations WHERE input = %s AND source = %s AND target = %s"
     cursor.execute(query_read, (_line, _source_lang, _target_lang))
-    result = cursor.fetchone()
+    result = cursor.fetchone()[0]
     return result
     
 @connect_cursor
