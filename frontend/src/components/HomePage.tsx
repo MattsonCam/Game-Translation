@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import LanguageSelect from './LanguageSelect';
 import FileUpload from './FileUpload';
 import { Button } from 'antd';
+import { v4 as uuidv4 } from 'uuid';
 
 interface LanguageOption {
   value: string;
@@ -38,8 +39,9 @@ const HomePage: React.FC = () => {
 
     // Here, you can call the API or perform any action needed
     // and then navigate to the processing page, if necessary
+    const requestId = uuidv4();
+    navigate(`/processing/${requestId}`, { state: { file: selectedFile, sourceLang: languages[0].selected, targetLang: languages[1].selected } });
 
-    navigate('/processing', { state: { file: selectedFile, sourceLang: languages[0].selected, targetLang: languages[1].selected } });
     setIsProcessing(false);
   };
 

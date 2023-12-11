@@ -2,7 +2,8 @@
 
 import io
 from flask import send_file, request, Flask, jsonify, Response
-import mysql.connector
+from flask_cors import CORS
+# import mysql.connector
 # from minio import Minio
 import uuid
 import redis
@@ -13,17 +14,18 @@ import hashlib
 import os
 
 app = Flask(__name__)
+CORS(app)
 # bucket_name = 'mp3files'
 # min_server = Minio(os.getenv('MINIO_HOST', 'localhost:9000'), access_key='rootuser', secret_key='rootpass123', secure=False)
 
 # Establish a mysql connection
 db_name = "translatedb"
-connection = mysql.connector.connect(
-host="10.74.112.3",
-user="root",
-password="",
-database=db_name
-)
+# connection = mysql.connector.connect(
+# host="10.74.112.3",
+# user="root",
+# password="",
+# database=db_name
+# )
 
 # Configure Redis
 redis_host = os.getenv('REDIS_HOST', 'localhost')
@@ -96,12 +98,10 @@ def find_translation(line, source_lang, target_lang, hash_key):
 def process_translations():
     try:
         data = request.get_json()
-        lines = data.get('tasks', [])
+        lines = data.get('lines', [])
         source_lang = data.get('sourceLang', '')
         target_lang = data.get('targetLang', '')
         request_id = data.get('requestId', '')
-
-        # mockResponse = [{'sourceText': lines[i], 'translatedText': 'Hola'} for i in range(len(lines))]
 
         response = {'requestId': request_id, 'status': False, 'results': {}}
         results = {}
@@ -117,8 +117,10 @@ def process_translations():
 
             push_queue(line, source_lang, target_lang, hash_key)
 
+        # results = {lines[i]: f"{lines[i]} - Translated" for i in range(len(lines) - 10)}
+
         response['results'] = results
-        if len(results) == len(lines):
+        if len(results) == len(set(lines)):
             response['status'] = True
 
         return jsonify(response), 200
@@ -129,7 +131,7 @@ def process_translations():
 def check_translation_status():
     try:
         data = request.get_json()
-        lines = data.get('tasks', [])
+        lines = data.get('lines', [])
         source_lang = data.get('sourceLang', '')
         target_lang = data.get('targetLang', '')
         request_id = data.get('requestId', '')
@@ -144,8 +146,10 @@ def check_translation_status():
                 results[line] = translated_line
                 continue
 
+        # results = {line: f"{line} - Translated" for line in lines}
+
         response['results'] = results
-        if len(results) == len(lines):
+        if len(results) == len(set(lines)):
             response['status'] = True
 
         return jsonify(response), 200

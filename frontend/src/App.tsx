@@ -9,7 +9,7 @@ function App() {
     <Router>
       <Routes>
         <Route path="/" element={<HomePage />} />
-        <Route path="/processing" element={<ProcessingPage />} />
+        <Route path="/processing/:requestId" element={<ProcessingPage />} />
       </Routes>
     </Router>
   );
