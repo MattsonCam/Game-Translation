@@ -1,0 +1,13 @@
+FROM python:3.8
+
+RUN apt-get update
+
+RUN apt-get install -y python3 python3-pip git
+
+RUN pip3 install minio redis jsonpickle Flask minio pillow numpy mysql-connector-python transformers[torch] sentencepiece
+
+RUN mkdir -p /app
+
+COPY llm-server.py /app/llm-server.py
+
+CMD ["python3", "/app/llm-server.py"]
