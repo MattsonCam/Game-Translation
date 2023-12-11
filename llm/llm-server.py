@@ -65,7 +65,7 @@ def process_translation(trans_data):
 
 def queue_listen():
     while True:
-        red_resp = redis_client.blpop('toWorker')[1]
+        red_resp = redis_client.blpop('translation_queue')[1]
         process_translation(json.loads(red_resp))
 
 if __name__ == '__main__':
