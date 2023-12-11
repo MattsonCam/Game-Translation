@@ -36,7 +36,7 @@ def send_translation_mysql(_input, _translation, _source, _target, cursor):
         print("Translation was added to mysql database")
         
 def send_translation_redis(_translation, _key):
-    redis_client.set(_key, _translation, ex=1800)
+    redis_client.set(_key, json.dumps({'translation': _translation}), ex=1800)
     print("Translation was added to redis")
 
 def process_translation(trans_data):
