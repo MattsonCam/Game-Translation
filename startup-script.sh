@@ -33,10 +33,10 @@ sudo apt-get install docker-ce docker-ce-cli containerd.io docker-buildx-plugin 
 
 # Start the docker container on port 5000
 EXTERNAL_IP=$(curl http://metadata.google.internal/computeMetadata/v1/instance/network-interfaces/0/access-configs/0/external-ip -H "Metadata-Flavor: Google")
-export REACT_APP_BACKEND_URL="http://$EXTERNAL_IP:5000"
+REACT_APP_BACKEND_URL="http://${EXTERNAL_IP}:5000"
 
 sudo docker run -d -p 5000:5000 --name my-flask --rm cama1171/project-rest-img:v1
-sudo docker run -d -e REACT_APP_BACKEND_URL -p 3000:3000 --name my-react --rm tish1781/project-react-img:v3
+sudo docker run -d -e REACT_APP_BACKEND_URL="$REACT_APP_BACKEND_URL" -p 3000:3000 --name my-react --rm tish1781/project-react-img:v3
 sudo docker run -d -p 5009:5009 --name my-llm --rm cama1171/project-llm-img:v1
 #git clone https://github.com/cu-csci-4253-datacenter/flask-tutorial
 #cd flask-tutorial
