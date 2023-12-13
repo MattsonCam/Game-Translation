@@ -32,9 +32,9 @@ sudo apt-get update
 sudo apt-get install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin -y
 
 # Start the docker container on port 5000
-sudo docker run -p 5000:5000 --name my-flask --rm cama1171/project-rest-img:v1
-sudo docker run -p 3000:3000 --name my-react --rm cama1171/react-img:v1
-sudo docker run -p 5009:5009 --name my-llm --rm cama1171/project-llm-img:v1
+sudo docker run -d -p 5000:5000 --name my-flask --rm cama1171/project-rest-img:v1
+sudo docker run -d -p 3000:3000 --name my-react --rm cama1171/react-img:v1
+sudo docker run -d -p 5009:5009 --name my-llm --rm cama1171/project-llm-img:v1
 #git clone https://github.com/cu-csci-4253-datacenter/flask-tutorial
 #cd flask-tutorial
 #sudo python3 setup.py install
