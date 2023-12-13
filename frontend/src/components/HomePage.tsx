@@ -12,17 +12,34 @@ interface LanguageOption {
 
 const HomePage: React.FC = () => {
   const navigate = useNavigate();
+  const initialOptions = [
+    { value: 'en', label: 'English' },
+    { value: 'fr', label: 'French' },
+    { value: 'ro', label: 'Romanian' },
+    { value: 'de', label: 'German' }
+    // ... other languages
+  ];
+
+
   const [languages, setLanguages] = useState<Array<{ options: LanguageOption[]; selected: string }>>([
-    { options: [{ value: 'en', label: 'English' }, /* ... other languages */], selected: '' },
-    { options: [{ value: 'es', label: 'Spanish' }, /* ... other languages */], selected: '' }
+    { options: initialOptions, selected: '' },
+    { options: initialOptions, selected: '' }
   ]);
 
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
 
   const handleLanguageSelect = (index: number, value: string) => {
-    const newLanguages = [...languages];
-    newLanguages[index].selected = value;
+    const newLanguages = languages.map((language, i) => {
+      if (i === index) {
+        return { ...language, selected: value };
+      }
+      return {
+        ...language,
+        options: initialOptions.filter(option => option.value !== value)
+      };
+    });
+
     setLanguages(newLanguages);
   };
 
