@@ -3,8 +3,7 @@
 import io
 from flask import send_file, request, Flask, jsonify, Response
 from flask_cors import CORS
-# import mysql.connector
-# from minio import Minio
+import mysql.connector
 import uuid
 import redis
 import base64
@@ -15,23 +14,20 @@ import os
 
 app = Flask(__name__)
 CORS(app)
-# bucket_name = 'mp3files'
-# min_server = Minio(os.getenv('MINIO_HOST', 'localhost:9000'), access_key='rootuser', secret_key='rootpass123', secure=False)
 
 # Establish a mysql connection
 db_name = "translatedb"
-# connection = mysql.connector.connect(
-# host="10.74.112.3",
-# user="root",
-# password="",
-# database=db_name
-# )
+connection = mysql.connector.connect(
+host="10.74.112.3",
+user="root",
+password="",
+database=db_name
+)
 
 # Configure Redis
-redis_host = os.getenv('REDIS_HOST', 'localhost')
-redis_port = os.getenv('REDIS_PORT', 6379)
-redis_client = redis.StrictRedis(host=redis_host, port=redis_port, db=0)
-
+redis_host = '10.38.224.3'
+redis_port = 6379
+redis_client = redis.StrictRedis(host=redis_host, port=redis_port)
 
 def get_hash_key(line, source_lang, target_lang):
     """
@@ -83,7 +79,8 @@ def find_translation(line, source_lang, target_lang, hash_key):
     cached_translation = redis_client.get(hash_key)
     if cached_translation:
         redis_client.expire(hash_key, 300)
-        return cached_translation.decode('utf-8')
+        cached_translation = json.loads(cached_translation)["translation"]
+        return cached_translation
 
     translation = query_database_for_translation(line, source_lang, target_lang)
     
@@ -156,28 +153,6 @@ def check_translation_status():
     except Exception as e:
         return jsonify({'error': 'Internal server error'}), 500
 
-
-"""
-@app.route('/apiv1/queue/', methods=['GET'])
-def get_queue():
-    queue = redis_server.lrange('toWorker', 0, -1)
-    return jsonify(queue=[json.loads(i) for i in queue])
-
-@app.route('/apiv1/track/<songhash>/<track>', methods=['GET'])
-def get_track(songhash, track):
-        mp3_name = f"{songhash}-{track}.mp3"
-        down_name = f"{track}.mp3"
-
-        track_info = min_server.get_object(bucket_name, mp3_name)
-        return send_file(io.BytesIO(track_info.read()), download_name=down_name, mimetype='audio/mpeg', as_attachment=True)
-
-@app.route('/apiv1/remove/<songhash>/<track>', methods=['GET', 'DELETE'])
-def remove_track(songhash, track):
-        mp3_name = f"{songhash}-{track}.mp3"
-
-        min_server.remove_object(bucket_name, mp3_name)
-        return jsonify(success=True, message="Track removed from database")
-"""
 @app.route('/', methods=['GET'])
 def hello():
     return '<h1>Game Translation Server</h1><p>Use a valid endpoint</p>'
