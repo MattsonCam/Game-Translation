@@ -85,6 +85,16 @@ def create_instance(
             }
     ).execute()
 
+    compute.firewalls().insert(
+        project=project,
+            body={
+                "name": "allow-5000",
+                "network": "global/networks/default",
+                "sourceRanges": ["0.0.0.0/0"],
+                "allowed": [{"IPProtocol": "tcp", "ports": ["5000"]}],
+                "targetTags": ["allow-5000"],
+            }
+    ).execute()
 
     # Get the latest Debian Jessie image.
     image_response = (
@@ -114,7 +124,7 @@ def create_instance(
                 },
             }
         ],
-        "tags": {"items": ["allow-3000"]},
+        "tags": {"items": ["allow-3000", "allow-5000"]},
         # Specify a network interface with NAT to access the public
         # internet.
         "networkInterfaces": [
