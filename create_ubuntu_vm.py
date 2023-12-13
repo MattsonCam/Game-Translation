@@ -124,7 +124,7 @@ def create_instance(
                 },
             }
         ],
-        "tags": {"items": ["allow-3000", "allow-5000"]},
+        "tags": {"items": ["allow-3000","allow-5000"]},
         # Specify a network interface with NAT to access the public
         # internet.
         "networkInterfaces": [
@@ -275,3 +275,4 @@ if __name__ == "__main__":
 
     main(args.project_id, args.bucket_name, args.zone, args.name)
 # [END run]
+
