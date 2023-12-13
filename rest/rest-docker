@@ -4,7 +4,7 @@ RUN apt-get update
 
 RUN apt-get install -y python3 python3-pip git
 
-RUN pip3 install minio redis jsonpickle Flask minio pillow numpy mysql-connector-python
+RUN pip3 install minio redis jsonpickle Flask minio pillow numpy mysql-connector-python flask-cors
 
 RUN mkdir -p /rest-app
 
