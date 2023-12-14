@@ -47,7 +47,7 @@ const ProcessingPage: React.FC = () => {
     reader.onload = async (event) => {
       const fileContent = event.target?.result;
       if (typeof fileContent === 'string') {
-        const lines = fileContent.split(/\r?\n/);
+        const lines = fileContent.split(/\r?\n/).filter(line => line.trim() !== '');
         const uniqueLines = new Set(lines);
 
         const fileData: FileData = { 
@@ -61,7 +61,7 @@ const ProcessingPage: React.FC = () => {
             sourceText: line, 
             translatedText: ''
         }));
-        
+
         setData(currentData); // Update state for rendering
         fetchAndPollTranslations(currentData, fileData);
       }

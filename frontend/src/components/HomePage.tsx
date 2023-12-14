@@ -20,7 +20,6 @@ const HomePage: React.FC = () => {
     // ... other languages
   ];
 
-
   const [languages, setLanguages] = useState<Array<{ options: LanguageOption[]; selected: string }>>([
     { options: initialOptions, selected: '' },
     { options: initialOptions, selected: '' }
@@ -28,6 +27,8 @@ const HomePage: React.FC = () => {
 
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
+
+  const isReadyToProcess = selectedFile && languages[0].selected && languages[1].selected;
 
   const handleLanguageSelect = (index: number, value: string) => {
     const newLanguages = languages.map((language, i) => {
@@ -72,7 +73,7 @@ const HomePage: React.FC = () => {
       <Button
         type="primary"
         onClick={handleProcessFile}
-        disabled={!selectedFile}
+        disabled={!isReadyToProcess}
         loading={isProcessing}
         style={{ marginTop: '20px' }}
       >
