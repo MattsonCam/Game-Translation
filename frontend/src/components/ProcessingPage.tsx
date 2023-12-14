@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useLocation, useParams } from 'react-router-dom';
-import { Table, Spin } from 'antd';
+import { Table, Spin, Button } from 'antd';
+import { DownloadOutlined } from '@ant-design/icons';
 import { postData } from '../api/apiFunctions';
 
 interface TranslationTuple {
@@ -28,6 +29,16 @@ const ProcessingPage: React.FC = () => {
   const { requestId = '' } = useParams<{ requestId?: string }>();
   const pollingInterval = useRef<number | null>(null);
 
+  // Download feature
+  const downloadTxtFile = () => {
+    const element = document.createElement("a");
+    const file = new Blob([data.map(item => `${item.sourceText}\t${item.translatedText}`).join('\n')], { type: 'text/plain' });
+    element.href = URL.createObjectURL(file);
+    element.download = "myFile.txt";
+    document.body.appendChild(element); // Required for this to work in FireFox
+    element.click();
+};
+
   useEffect(() => {
     const { file, sourceLang, targetLang } = location.state as { file: File, sourceLang: string, targetLang: string };
 
@@ -37,9 +48,20 @@ const ProcessingPage: React.FC = () => {
       const fileContent = event.target?.result;
       if (typeof fileContent === 'string') {
         const lines = fileContent.split(/\r?\n/);
-        const fileData: FileData = { lines, sourceLang, targetLang, requestId };
+        const uniqueLines = new Set(lines);
+
+        const fileData: FileData = { 
+            lines: Array.from(uniqueLines),
+            sourceLang, 
+            targetLang, 
+            requestId 
+        };
         
-        let currentData = lines.map(line => ({ sourceText: line, translatedText: '' }));
+        let currentData = Array.from(uniqueLines).map(line => ({
+            sourceText: line, 
+            translatedText: ''
+        }));
+        
         setData(currentData); // Update state for rendering
         fetchAndPollTranslations(currentData, fileData);
       }
@@ -127,11 +149,20 @@ const ProcessingPage: React.FC = () => {
 
   return (
     <div>
-      <h1>Processing...</h1>
-      {isLoading ? (
-        <Spin size="large" />
-      ) : <></>}
-      <Table dataSource={data} columns={columns} rowKey="sourceText" />
+        <h1>Processing...</h1>
+        {isLoading ? (
+            <Spin size="large" />
+        ) : (
+            <Button
+                type="primary"
+                icon={<DownloadOutlined />}
+                onClick={downloadTxtFile}
+                style={{ marginBottom: '20px' }}
+            >
+                Download as TXT
+            </Button>
+        )}
+        <Table dataSource={data} columns={columns} rowKey="sourceText" />
     </div>
   );
 };

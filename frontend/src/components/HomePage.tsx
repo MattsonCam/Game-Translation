@@ -13,10 +13,10 @@ interface LanguageOption {
 const HomePage: React.FC = () => {
   const navigate = useNavigate();
   const initialOptions = [
-    { value: 'en', label: 'English' },
-    { value: 'fr', label: 'French' },
-    { value: 'ro', label: 'Romanian' },
-    { value: 'de', label: 'German' }
+    { value: 'English', label: 'English' },
+    { value: 'French', label: 'French' },
+    { value: 'Romanian', label: 'Romanian' },
+    { value: 'German', label: 'German' }
     // ... other languages
   ];
 
