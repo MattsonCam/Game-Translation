@@ -1,6 +1,7 @@
 #!/bin/python3
 
 import io
+import logging
 from flask import send_file, request, Flask, jsonify, Response
 from flask_cors import CORS
 import mysql.connector
@@ -14,6 +15,8 @@ import os
 
 app = Flask(__name__)
 CORS(app)
+app.logger.setLevel(logging.DEBUG)
+logger = logging.getLogger('flask.app')
 
 # Establish a mysql connection
 db_name = "translatedb"
@@ -59,8 +62,13 @@ def connect_cursor(func):
 def query_database_for_translation(_line, _source_lang, _target_lang, cursor):
     query_read = "SELECT translation FROM translations WHERE input = %s AND source = %s AND target = %s"
     cursor.execute(query_read, (_line, _source_lang, _target_lang))
-    result = cursor.fetchone()[0]
-    return result
+    fetch_result = cursor.fetchone()
+
+    if fetch_result is not None:
+        result = fetch_result[0]
+        return result
+    else:
+        return None
     
 @connect_cursor
 def insert_translation(_input, _translation, _source, _target, cursor):
@@ -75,20 +83,30 @@ def insert_translation(_input, _translation, _source, _target, cursor):
         print("Translation already exists")
 
 def find_translation(line, source_lang, target_lang, hash_key):
-    # Check if the translation is in Redis cache
-    cached_translation = redis_client.get(hash_key)
-    if cached_translation:
-        redis_client.expire(hash_key, 300)
-        cached_translation = json.loads(cached_translation)["translation"]
-        return cached_translation
+    try:
+        cached_translation = redis_client.get(hash_key)
 
-    translation = query_database_for_translation(line, source_lang, target_lang)
-    
-    if translation:
-        redis_client.set(hash_key, translation, ex=1800)
-        return translation
+        if cached_translation is not None:
+            redis_client.expire(hash_key, 300)
+            try:
+                cached_translation_json = json.loads(cached_translation)
+                if "translation" in cached_translation_json:
+                    return cached_translation_json["translation"]
+            except json.JSONDecodeError as json_err:
+                logger.error(f"JSON decoding error: {json_err}")
+                # Handle the case where JSON is not in expected format
 
-    return None
+        logger.error(f"Retrieving translation for line: '{line}', Querying database for translation")
+        translation = query_database_for_translation(line, source_lang, target_lang)
+
+        if translation is not None:
+            redis_client.set(hash_key, json.dumps({'translation': translation}), ex=1800)
+            return translation
+
+        return None
+    except Exception as e:
+        logger.error(f"Error finding translation: {e}")
+        raise
 
 
 @app.route('/apiv1/translate/request', methods=['POST'])
@@ -122,7 +140,7 @@ def process_translations():
 
         return jsonify(response), 200
     except Exception as e:
-        return jsonify({'error': 'Internal server error'}), 500
+        return jsonify({'error': 'Internal server error', 'details': str(e)}), 500
 
 @app.route('/apiv1/translate/status', methods=['POST'])
 def check_translation_status():
@@ -151,7 +169,7 @@ def check_translation_status():
 
         return jsonify(response), 200
     except Exception as e:
-        return jsonify({'error': 'Internal server error'}), 500
+        return jsonify({'error': 'Internal server error', 'details': str(e)}), 500
 
 @app.route('/', methods=['GET'])
 def hello():
